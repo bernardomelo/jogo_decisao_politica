@@ -1,0 +1,127 @@
+/* ====== Reset básico ====== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ====== Corpo da página ====== */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f6f6f8;
+    color: #111;
+    line-height: 1.5;
+    padding: 16px;
+}
+
+/* ====== Container principal ====== */
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* ====== Cabeçalhos ====== */
+h1 {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+h2, h3, h4 {
+    margin-bottom: 8px;
+}
+
+/* ====== Cartões de jogadores ====== */
+.players {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.player-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 12px;
+    flex: 1 1 200px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.player-card label {
+    display: block;
+    margin: 4px 0;
+}
+
+.player-card p {
+    margin-top: 8px;
+    font-size: 14px;
+    color: #444;
+}
+
+/* ====== Indicadores ====== */
+.indicators {
+    background: #fff;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.indicators ul {
+    list-style: none;
+    padding: 0;
+}
+
+.indicators li {
+    padding: 4px 0;
+    font-size: 15px;
+}
+
+/* ====== Botões ====== */
+button {
+    background: #0b5ed7;
+    color: #fff;
+    border: none;
+    padding: 10px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.2s ease-in-out;
+}
+
+button:hover {
+    background: #094db0;
+}
+
+/* ====== Mensagens de erro ====== */
+.error {
+    color: #c00;
+    font-weight: bold;
+    margin-top: 8px;
+}
+
+/* ====== Sessão final ====== */
+.final {
+    background: #fff;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.final ul, .final ol {
+    margin-top: 8px;
+    margin-bottom: 12px;
+    padding-left: 18px;
+}
+
+/* ====== Responsividade ====== */
+@media (max-width: 600px) {
+    body {
+        padding: 8px;
+    }
+    .players {
+        flex-direction: column;
+    }
+    .player-card {
+        flex: 1 1 100%;
+    }
+}

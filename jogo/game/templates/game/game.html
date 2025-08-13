@@ -1,0 +1,327 @@
+{% load static %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>POC - Jogo Político</title>
+  <link rel="stylesheet" href="{% static 'game/style.css' %}">
+  <style>
+    .progress-bar {
+      width: 100%;
+      height: 20px;
+      background: #e9ecef;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 5px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #007bff;
+      transition: width 0.3s ease;
+    }
+    .submit-btn {
+      background-color: #28a745;
+      color: white;
+      padding: 15px 30px;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+      font-size: 16px;
+      width: 100%;
+      margin-top: 20px;
+      transition: all 0.3s ease;
+    }
+    .submit-btn:disabled {
+      background-color: #6c757d;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    .submit-btn:hover:not(:disabled) {
+      background-color: #218838;
+    }
+    .missing-votes {
+      color: #dc3545;
+      font-weight: bold;
+      margin: 10px 0;
+      padding: 10px;
+      background: #f8d7da;
+      border-radius: 5px;
+    }
+    .communication-choice {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>Jogo de Decisões - Rodada {{ gs.rodada_atual }}/{{ max_rounds }}</h1>
+
+    <!-- Progress bar for rounds -->
+    {% if gs.active %}
+    <div class="progress-bar" style="margin: 20px 0;">
+      <div class="progress-fill" style="width: {% widthratio gs.rodada_atual max_rounds 100 %}%;"></div>
+    </div>
+    {% endif %}
+
+    <!-- Debug Info -->
+    <div style="background: #f0f0f0; padding: 10px; margin: 10px 0; font-size: 12px;">
+      <strong>DEBUG:</strong>
+      Active: {{ gs.active }} |
+      Rodada: {{ gs.rodada_atual }} |
+      Cenário existe: {% if scenario %}SIM{% else %}NÃO{% endif %}
+    </div>
+
+    {% if not gs.active %}
+      <!-- Game End Screen -->
+      {% if end_reason == "collapse" %}
+        <div style="background: linear-gradient(135deg, #dc3545, #fd7e14); color: white; text-align: center; padding: 20px; border-radius: 10px; margin: 20px 0;">
+          <h2>🚨 COLAPSO DO SISTEMA!</h2>
+          <p>Um dos indicadores críticos chegou ao nível mínimo.</p>
+        </div>
+      {% else %}
+        <div style="background: linear-gradient(135deg, #28a745, #20c997); color: white; text-align: center; padding: 20px; border-radius: 10px; margin: 20px 0;">
+          <h2>🎉 JOGO COMPLETADO!</h2>
+          <p>Parabéns! Vocês conseguiram governar por {{ max_rounds }} rodadas.</p>
+        </div>
+      {% endif %}
+
+      <section class="final">
+        <h2>Resultados Finais</h2>
+
+        <!-- Final Indicators -->
+        <div class="indicators">
+          <h3>Indicadores Finais</h3>
+          <ul>
+            <li>🏛️ Estabilidade: {{ gs.estabilidade }}/8
+              {% if gs.estabilidade == 1 %}<span style="color: red;">⚠️ CRÍTICO</span>{% endif %}
+            </li>
+            <li>🛡️ Segurança: {{ gs.seguranca }}/8
+              {% if gs.seguranca == 1 %}<span style="color: red;">⚠️ CRÍTICO</span>{% endif %}
+            </li>
+            <li>💰 Economia: {{ gs.economia }}/8
+              {% if gs.economia == 1 %}<span style="color: red;">⚠️ CRÍTICO</span>{% endif %}
+            </li>
+            <li>🗽 Liberdade: {{ gs.liberdade }}/8
+              {% if gs.liberdade == 1 %}<span style="color: red;">⚠️ CRÍTICO</span>{% endif %}
+            </li>
+          </ul>
+        </div>
+
+        <!-- Player Rankings -->
+        <h3>🏆 Rankings</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div>
+            <h4>Pontuação Individual</h4>
+            <ol>
+              {% for p in players|dictsortreversed:"pontuacao_individual" %}
+                <li>{{ p.papel }} — {{ p.pontuacao_individual }} pontos
+                  {% if forloop.first %}🥇{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% endif %}
+                </li>
+              {% endfor %}
+            </ol>
+          </div>
+          <div>
+            <h4>Pontuação Coletiva</h4>
+            <ol>
+              {% for p in players|dictsortreversed:"pontuacao_coletiva" %}
+                <li>{{ p.papel }} — {{ p.pontuacao_coletiva }} pontos
+                  {% if forloop.first %}🥇{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% endif %}
+                </li>
+              {% endfor %}
+            </ol>
+          </div>
+        </div>
+
+        <!-- Communication Type Selection for Session Save -->
+        {% if end_reason == "completed" %}
+        <div class="communication-choice">
+          <h3>📋 Salvar Dados da Sessão</h3>
+          <p>Esta sessão foi jogada com ou sem comunicação entre os jogadores?</p>
+
+          <form method="post" style="text-align: center;">
+            {% csrf_token %}
+            <div style="margin: 15px 0;">
+              <label style="margin: 0 15px;">
+                <input type="radio" name="tipo_comunicacao_final" value="SIM" checked>
+                ✅ Com Comunicação
+              </label>
+              <label style="margin: 0 15px;">
+                <input type="radio" name="tipo_comunicacao_final" value="NAO">
+                ❌ Sem Comunicação
+              </label>
+            </div>
+
+            <input type="hidden" name="reset_game" value="1">
+            <button type="submit" style="background-color: #007bff; color: white; padding: 15px 30px; border: none; cursor: pointer; border-radius: 5px; font-size: 16px;">
+              💾 Salvar Sessão e Iniciar Nova Partida
+            </button>
+          </form>
+        </div>
+        {% else %}
+        <!-- Para jogos que terminaram por colapso, apenas botão de reset -->
+        <div style="text-align: center; margin-top: 20px;">
+          <p style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            ⚠️ Os dados desta sessão foram salvos automaticamente como "INTERROMPIDO"
+          </p>
+
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="reset_game" value="1">
+            <button type="submit" style="background-color: #007bff; color: white; padding: 15px 30px; border: none; cursor: pointer; border-radius: 5px; font-size: 16px;">
+              🔄 Iniciar Nova Partida
+            </button>
+          </form>
+        </div>
+        {% endif %}
+
+        <p style="text-align: center; margin-top: 20px;">
+          <a href="{% url 'admin:index' %}">📋 Ver Dados das Sessões no Admin</a>
+        </p>
+      </section>
+
+    {% else %}
+      <!-- Active Game Screen -->
+      {% if scenario %}
+        <section class="scenario">
+          <h2>{{ scenario.codigo }} — {{ scenario.titulo }}</h2>
+
+          {% if scenario.tema %}
+            <p><strong>Tema:</strong> {{ scenario.tema }}</p>
+          {% endif %}
+
+          <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;">
+            <p><strong>Contexto:</strong> {{ scenario.contexto }}</p>
+          </div>
+
+          <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #ffc107;">
+            <p><strong>⚡ Dilema:</strong> {{ scenario.dilema }}</p>
+          </div>
+
+          <form method="post" id="gameForm">
+            {% csrf_token %}
+            <div class="players">
+              {% for p in players %}
+                <div class="player-card">
+                  <h4>{{ p.papel }}</h4>
+                  <div style="margin: 10px 0;">
+                    <label style="display: block; margin: 5px 0;">
+                      <input type="radio" name="choice_{{ p.papel }}" value="A"
+                             style="margin-right: 5px;"
+                             onchange="checkAllVotes()">
+                      <strong>A</strong> - Sim
+                    </label>
+                    <label style="display: block; margin: 5px 0;">
+                      <input type="radio" name="choice_{{ p.papel }}" value="B"
+                             style="margin-right: 5px;"
+                             onchange="checkAllVotes()">
+                      <strong>B</strong> - Não
+                    </label>
+                  </div>
+                  <div style="font-size: 12px; color: #666;">
+                    <strong>Pontuação:</strong><br>
+                    Individual: {{ p.pontuacao_individual }} | Coletiva: {{ p.pontuacao_coletiva }}
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+
+            <div class="indicators">
+              <h3>📈 Indicadores Atuais</h3>
+              <ul>
+                <li>🏛️ Estabilidade: {{ gs.estabilidade }}/8</li>
+                <li>🛡️ Segurança: {{ gs.seguranca }}/8</li>
+                <li>💰 Economia: {{ gs.economia }}/8</li>
+                <li>🗽 Liberdade: {{ gs.liberdade }}/8</li>
+              </ul>
+              <p style="font-size: 12px; color: #666; margin-top: 10px;">
+                ⚠️ Se qualquer indicador chegar a 1, o jogo termina!
+              </p>
+            </div>
+
+            <!-- Missing votes warning -->
+            <div id="missingVotesWarning" class="missing-votes" style="display: none;">
+              ⚠️ Alguns jogadores ainda não votaram. Todos devem votar antes de encerrar a rodada.
+            </div>
+
+            {% if error %}
+              <p class="error" style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px;">
+                {{ error }}
+              </p>
+            {% endif %}
+
+            <button type="submit" id="submitBtn" class="submit-btn" disabled>
+              ✅ Encerrar Rodada {{ gs.rodada_atual }} - Aguardando todos os votos...
+            </button>
+          </form>
+        </section>
+
+        <script>
+          function checkAllVotes() {
+            const players = [
+              {% for p in players %}'{{ p.papel }}'{% if not forloop.last %},{% endif %}{% endfor %}
+            ];
+
+            let allVoted = true;
+            let missingPlayers = [];
+
+            players.forEach(function(papel) {
+              const radios = document.getElementsByName('choice_' + papel);
+              let playerVoted = false;
+
+              for (let radio of radios) {
+                if (radio.checked) {
+                  playerVoted = true;
+                  break;
+                }
+              }
+
+              if (!playerVoted) {
+                allVoted = false;
+                missingPlayers.push(papel);
+              }
+            });
+
+            const submitBtn = document.getElementById('submitBtn');
+            const warningDiv = document.getElementById('missingVotesWarning');
+
+            if (allVoted) {
+              submitBtn.disabled = false;
+              submitBtn.textContent = '✅ Encerrar Rodada {{ gs.rodada_atual }}';
+              submitBtn.style.backgroundColor = '#28a745';
+              warningDiv.style.display = 'none';
+            } else {
+              submitBtn.disabled = true;
+              submitBtn.textContent = '⏳ Aguardando votos de: ' + missingPlayers.join(', ');
+              submitBtn.style.backgroundColor = '#6c757d';
+              warningDiv.style.display = 'block';
+            }
+          }
+
+          // Check initial state on page load
+          document.addEventListener('DOMContentLoaded', function() {
+            checkAllVotes();
+          });
+        </script>
+
+      {% else %}
+        <div style="background: #ffeeee; padding: 20px; border: 1px solid #ff0000; border-radius: 5px;">
+          <h3>❌ Erro: Cenário não encontrado!</h3>
+          <p>Não há cenários disponíveis para a rodada {{ gs.rodada_atual }}.</p>
+          <p>Certifique-se de ter cenários cadastrados no admin do Django.</p>
+          <form method="post" style="margin-top: 15px;">
+            {% csrf_token %}
+            <input type="hidden" name="reset_game" value="1">
+            <button type="submit" style="background-color: #dc3545; color: white; padding: 10px 20px; border: none; cursor: pointer; border-radius: 5px;">
+              🔄 Resetar Jogo
+            </button>
+          </form>
+        </div>
+      {% endif %}
+    {% endif %}
+  </main>
+</body>
+</html>
